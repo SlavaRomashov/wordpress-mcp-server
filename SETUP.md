@@ -33,9 +33,9 @@ pip install -r requirements.txt
 
 ## Шаг 3: Настройка переменных окружения
 
-1. Скопируйте файл `config.example.env` в `.env`:
+1. Скопируйте файл `.env.example` в `.env`:
 ```bash
-cp config.example.env .env
+cp .env.example .env
 ```
 
 2. Откройте файл `.env` и заполните:

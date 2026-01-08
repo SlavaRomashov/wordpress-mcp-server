@@ -44,7 +44,7 @@ git push -u origin main
 - ✅ README.md
 - ✅ SETUP.md
 - ✅ QUICKSTART.md
-- ✅ config.example.env
+- ✅ .env.example
 - ✅ example_usage.py
 - ✅ .gitignore
 - ✅ PROJECT_STRUCTURE.md
@@ -91,7 +91,7 @@ git status
 git log
 
 # Посмотреть удаленные репозитории
-git remote -v
+git remote -vgit 
 
 # Обновить локальный репозиторий
 git pull
@@ -100,7 +100,7 @@ git pull
 ## Безопасность
 
 - ✅ `.env` файл уже в `.gitignore` - не попадет в репозиторий
-- ✅ `config.example.env` - безопасный пример конфигурации
+- ✅ `.env.example` - безопасный пример конфигурации
 - ✅ Никаких паролей или секретов в коде
 
 ## Проблемы?

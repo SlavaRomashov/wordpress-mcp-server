@@ -1,0 +1,46 @@
+### OS-specific ###
+.DS_Store
+Thumbs.db
+
+### Python ###
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+### Environment & config ###
+.env
+.env.*
+!.env.example
+config.env
+
+### Logs & runtime files ###
+*.log
+*.pid
+*.sqlite3
+
+### IDE / editor ###
+.vscode/
+.idea/
+*.swp
+*.swo
+
+### Python tooling ###
+.pytest_cache/
+.coverage
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.tox/
+

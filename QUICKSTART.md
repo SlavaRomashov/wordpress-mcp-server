@@ -15,7 +15,7 @@ pip install -r requirements.txt
 
 ### 3. Настройка .env (1 минута)
 ```bash
-cp config.example.env .env
+cp .env.example .env
 ```
 
 Отредактируйте `.env`:
