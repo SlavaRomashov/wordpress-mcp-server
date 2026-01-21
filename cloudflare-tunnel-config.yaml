@@ -1,0 +1,16 @@
+# Cloudflare Tunnel Configuration для WordPress MCP Server
+# Используется для безопасного подключения ChatGPT к локальному MCP серверу
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /path/to/credentials.json
+
+ingress:
+  # Правило для MCP сервера (stdin/stdout через stdio)
+  # Cloudflare Tunnel будет проксировать stdio соединение
+  - hostname: your-mcp-server.yourdomain.com
+    service: stdio
+    originRequest:
+      noHappyEyeballs: true
+  
+  # Fallback правило (обязательно)
+  - service: http_status:404

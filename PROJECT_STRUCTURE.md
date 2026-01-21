@@ -4,15 +4,21 @@
 
 ```
 wordpress-mcp-server/
-├── server.py                 # Основной MCP сервер с всеми инструментами
-├── example_usage.py          # Примеры использования функций
-├── requirements.txt          # Зависимости Python
-├── .env.example              # Пример конфигурации
-├── .gitignore               # Игнорируемые файлы для Git
-├── README.md                # Основная документация
-├── SETUP.md                 # Подробная инструкция по установке
-├── QUICKSTART.md            # Быстрый старт за 5 минут
-└── PROJECT_STRUCTURE.md     # Этот файл
+├── server.py                      # Основной MCP сервер с всеми инструментами
+├── example_usage.py               # Примеры использования функций
+├── requirements.txt               # Зависимости Python
+├── config.example.env             # Пример конфигурации
+├── .env                          # Ваши настройки (не коммитится)
+├── .gitignore                    # Игнорируемые файлы для Git
+├── cloudflare-tunnel-config.yaml  # Конфигурация Cloudflare Tunnel
+├── start_with_tunnel.sh          # Скрипт запуска с Cloudflare Tunnel
+├── mcp-config-example.json       # Пример конфигурации MCP для ChatGPT
+├── README.md                     # Основная документация
+├── SETUP.md                      # Подробная инструкция по установке
+├── QUICKSTART.md                 # Быстрый старт за 5 минут
+├── QUICKSTART_CLOUDFLARE.md      # Быстрый старт с Cloudflare Tunnel
+├── CLOUDFLARE_TUNNEL_SETUP.md    # Подробная инструкция по Cloudflare Tunnel
+└── PROJECT_STRUCTURE.md          # Этот файл
 ```
 
 ## Описание файлов
@@ -28,6 +34,7 @@ wordpress-mcp-server/
   - Комментарии (5 инструментов)
   - Категории (3 инструмента)
   - Теги (3 инструмента)
+  - Поиск (1 инструмент)
   - Информация о сайте (1 инструмент)
 
 ### example_usage.py
@@ -40,8 +47,20 @@ wordpress-mcp-server/
 - `python-dotenv` - загрузка переменных окружения
 - `pydantic` - валидация данных
 
-### .env.example
+### config.example.env
 Шаблон файла конфигурации с переменными окружения.
+
+### cloudflare-tunnel-config.yaml
+Конфигурационный файл для Cloudflare Tunnel. Используется для безопасного подключения ChatGPT к локальному MCP серверу.
+
+### start_with_tunnel.sh
+Скрипт для запуска MCP сервера с поддержкой Cloudflare Tunnel. Автоматически проверяет конфигурацию и запускает необходимые компоненты.
+
+### CLOUDFLARE_TUNNEL_SETUP.md
+Подробная инструкция по настройке Cloudflare Tunnel для работы с WordPress MCP Server.
+
+### QUICKSTART_CLOUDFLARE.md
+Быстрый старт с Cloudflare Tunnel за 10 минут.
 
 ## Доступные инструменты
 
@@ -66,9 +85,16 @@ wordpress-mcp-server/
 - `wp_update_user` - Обновить пользователя
 
 ### Управление медиа
-- `wp_upload_media` - Загрузить медиафайл (из URL или локального файла)
+- `wp_upload_media` - Загрузить медиафайл
 - `wp_get_media` - Получить медиафайл
 - `wp_list_media` - Список медиафайлов
+
+### Управление комментариями
+- `wp_get_comment` - Получить комментарий
+- `wp_list_comments` - Список комментариев
+- `wp_create_comment` - Создать комментарий
+- `wp_update_comment` - Обновить комментарий
+- `wp_delete_comment` - Удалить комментарий
 
 ### Управление категориями
 - `wp_list_categories` - Список категорий
@@ -80,12 +106,8 @@ wordpress-mcp-server/
 - `wp_get_tag` - Получить тег
 - `wp_create_tag` - Создать тег
 
-### Управление комментариями
-- `wp_get_comment` - Получить комментарий
-- `wp_list_comments` - Список комментариев
-- `wp_create_comment` - Создать комментарий
-- `wp_update_comment` - Обновить комментарий
-- `wp_delete_comment` - Удалить комментарий
+### Поиск
+- `wp_search` - Поиск по сайту
 
 ### Информация
 - `wp_get_site_info` - Информация о сайте
@@ -96,6 +118,7 @@ wordpress-mcp-server/
 - **FastMCP** - фреймворк MCP сервера
 - **WordPress REST API** - API для управления WordPress
 - **Basic Authentication** - аутентификация через Application Passwords
+- **Cloudflare Tunnel** - безопасное подключение через cloudflared (опционально)
 
 ## Безопасность
 
@@ -103,6 +126,8 @@ wordpress-mcp-server/
 - Переменные окружения для конфиденциальных данных
 - Обработка ошибок и валидация входных данных
 - HTTPS поддержка
+- Cloudflare Tunnel для безопасного подключения извне (опционально)
+- `.gitignore` для защиты секретных файлов
 
 ## Расширение функциональности
 

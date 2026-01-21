@@ -6,7 +6,6 @@ WordPress MCP Server
 
 import os
 import base64
-import mimetypes
 from typing import Optional, List, Dict, Any
 from urllib.parse import urljoin
 
@@ -59,39 +58,16 @@ class WordPressClient:
         try:
             response = self.client.request(method, url, **kwargs)
             response.raise_for_status()
-            
-            # Для DELETE запросов может не быть тела ответа
-            if response.status_code == 204 or not response.text:
-                return {"deleted": True, "status": response.status_code}
-            
             return response.json()
         except httpx.HTTPStatusError as e:
             error_msg = f"HTTP {e.response.status_code}"
-            if e.response.status_code == 401:
-                error_msg += ": Ошибка аутентификации. Проверьте WORDPRESS_USERNAME и WORDPRESS_APP_PASSWORD"
-            elif e.response.status_code == 403:
-                error_msg += ": Доступ запрещен. Проверьте права пользователя"
-            elif e.response.status_code == 404:
-                error_msg += ": Ресурс не найден"
-            elif e.response.status_code == 500:
-                error_msg += ": Внутренняя ошибка сервера WordPress"
-            
             if e.response.text:
                 try:
                     error_data = e.response.json()
-                    if isinstance(error_data, dict):
-                        error_msg += f" - {error_data.get('message', error_data.get('code', e.response.text))}"
-                    else:
-                        error_msg += f" - {str(error_data)}"
+                    error_msg += f": {error_data.get('message', e.response.text)}"
                 except:
-                    # Если не JSON, берем первые 200 символов текста
-                    text = e.response.text[:200] if len(e.response.text) > 200 else e.response.text
-                    error_msg += f" - {text}"
+                    error_msg += f": {e.response.text}"
             raise Exception(error_msg)
-        except httpx.TimeoutException:
-            raise Exception(f"Таймаут запроса к WordPress (превышено {WORDPRESS_TIMEOUT} секунд)")
-        except httpx.ConnectError:
-            raise Exception(f"Не удалось подключиться к {WORDPRESS_URL}. Проверьте URL и доступность сайта")
         except httpx.RequestError as e:
             raise Exception(f"Ошибка подключения: {str(e)}")
     
@@ -111,43 +87,20 @@ class WordPressClient:
         """DELETE запрос"""
         return self._request("DELETE", endpoint, params=params)
     
-    def upload_media(self, file_url: Optional[str] = None, file_path: Optional[str] = None, 
-                     title: Optional[str] = None, alt_text: Optional[str] = None) -> Dict[str, Any]:
-        """Загружает медиафайл по URL или из локального файла"""
-        file_content = None
-        file_name = None
-        
-        # Загружаем файл из URL или локального файла
-        if file_url:
-            try:
-                file_response = httpx.get(file_url, timeout=WORDPRESS_TIMEOUT)
-                file_response.raise_for_status()
-                file_content = file_response.content
-                file_name = os.path.basename(file_url)
-            except Exception as e:
-                raise Exception(f"Не удалось загрузить файл по URL: {str(e)}")
-        elif file_path:
-            try:
-                if not os.path.exists(file_path):
-                    raise FileNotFoundError(f"Файл не найден: {file_path}")
-                with open(file_path, 'rb') as f:
-                    file_content = f.read()
-                file_name = os.path.basename(file_path)
-            except Exception as e:
-                raise Exception(f"Не удалось прочитать локальный файл: {str(e)}")
-        else:
-            raise ValueError("Необходимо указать file_url или file_path")
-        
-        if not file_content or not file_name:
-            raise ValueError("Не удалось получить содержимое файла")
-        
-        # Определяем MIME тип
-        mime_type, _ = mimetypes.guess_type(file_name)
-        content_type = mime_type or 'application/octet-stream'
+    def upload_media(self, file_url: str, title: Optional[str] = None, alt_text: Optional[str] = None) -> Dict[str, Any]:
+        """Загружает медиафайл по URL"""
+        # Скачиваем файл
+        try:
+            file_response = httpx.get(file_url, timeout=WORDPRESS_TIMEOUT)
+            file_response.raise_for_status()
+            file_content = file_response.content
+            file_name = os.path.basename(file_url)
+        except Exception as e:
+            raise Exception(f"Не удалось загрузить файл: {str(e)}")
         
         # Загружаем в WordPress
         files = {
-            "file": (file_name, file_content, content_type)
+            "file": (file_name, file_content)
         }
         data = {}
         if title:
@@ -156,29 +109,9 @@ class WordPressClient:
             data["alt_text"] = alt_text
         
         url = urljoin(API_BASE + "/", "media")
-        # Для загрузки файлов нужно использовать multipart/form-data
-        headers = {
-            "Authorization": self.auth_header,
-            "Accept": "application/json"
-        }
-        # Убираем Content-Type из заголовков, httpx установит его автоматически с boundary
-        
-        try:
-            response = self.client.post(url, files=files, data=data, headers=headers)
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPStatusError as e:
-            error_msg = f"HTTP {e.response.status_code}: Не удалось загрузить медиафайл"
-            if e.response.text:
-                try:
-                    error_data = e.response.json()
-                    if isinstance(error_data, dict):
-                        error_msg += f" - {error_data.get('message', error_data.get('code', e.response.text))}"
-                except:
-                    pass
-            raise Exception(error_msg)
-        except httpx.RequestError as e:
-            raise Exception(f"Ошибка при загрузке медиафайла: {str(e)}")
+        response = self.client.post(url, files=files, data=data)
+        response.raise_for_status()
+        return response.json()
     
     def close(self):
         """Закрывает HTTP клиент"""
@@ -638,20 +571,13 @@ def wp_update_user(
 
 @mcp.tool()
 def wp_upload_media(
-    file_url: Optional[str] = Field(None, description="URL файла для загрузки"),
-    file_path: Optional[str] = Field(None, description="Путь к локальному файлу"),
+    file_url: str = Field(..., description="URL файла для загрузки"),
     title: Optional[str] = Field(None, description="Заголовок медиафайла"),
     alt_text: Optional[str] = Field(None, description="Альтернативный текст для изображения")
 ) -> Dict[str, Any]:
-    """Загружает медиафайл в WordPress из URL или локального файла"""
-    if not file_url and not file_path:
-        return {
-            "success": False,
-            "error": "Необходимо указать file_url или file_path"
-        }
-    
+    """Загружает медиафайл в WordPress"""
     client = get_client()
-    result = client.upload_media(file_url=file_url, file_path=file_path, title=title, alt_text=alt_text)
+    result = client.upload_media(file_url, title, alt_text)
     return {
         "success": True,
         "message": "Медиафайл успешно загружен",
@@ -858,7 +784,7 @@ def wp_delete_comment(
 
 @mcp.tool()
 def wp_list_categories(
-    per_page: int = Field(100, description="Количество категорий"),
+    per_page: int = Field(100, description="Количество категорий на странице"),
     page: int = Field(1, description="Номер страницы"),
     search: Optional[str] = Field(None, description="Поисковый запрос"),
     parent: Optional[int] = Field(None, description="ID родительской категории")
@@ -876,14 +802,14 @@ def wp_list_categories(
     
     result = client.get("categories", params=params)
     categories = []
-    for category in result:
+    for cat in result:
         categories.append({
-            "id": category["id"],
-            "name": category["name"],
-            "slug": category["slug"],
-            "description": category.get("description", ""),
-            "count": category.get("count", 0),
-            "parent": category.get("parent", 0)
+            "id": cat["id"],
+            "name": cat["name"],
+            "slug": cat["slug"],
+            "description": cat.get("description", ""),
+            "count": cat.get("count", 0),
+            "parent": cat.get("parent", 0)
         })
     
     return {
@@ -914,17 +840,17 @@ def wp_get_category(category_id: int = Field(..., description="ID категор
 @mcp.tool()
 def wp_create_category(
     name: str = Field(..., description="Название категории"),
-    description: Optional[str] = Field(None, description="Описание категории"),
     slug: Optional[str] = Field(None, description="URL-слаг категории"),
+    description: Optional[str] = Field(None, description="Описание категории"),
     parent: Optional[int] = Field(None, description="ID родительской категории")
 ) -> Dict[str, Any]:
     """Создает новую категорию"""
     client = get_client()
     data = {"name": name}
-    if description:
-        data["description"] = description
     if slug:
         data["slug"] = slug
+    if description:
+        data["description"] = description
     if parent:
         data["parent"] = parent
     
@@ -944,7 +870,7 @@ def wp_create_category(
 
 @mcp.tool()
 def wp_list_tags(
-    per_page: int = Field(100, description="Количество тегов"),
+    per_page: int = Field(100, description="Количество тегов на странице"),
     page: int = Field(1, description="Номер страницы"),
     search: Optional[str] = Field(None, description="Поисковый запрос")
 ) -> Dict[str, Any]:
@@ -995,16 +921,16 @@ def wp_get_tag(tag_id: int = Field(..., description="ID тега")) -> Dict[str,
 @mcp.tool()
 def wp_create_tag(
     name: str = Field(..., description="Название тега"),
-    description: Optional[str] = Field(None, description="Описание тега"),
-    slug: Optional[str] = Field(None, description="URL-слаг тега")
+    slug: Optional[str] = Field(None, description="URL-слаг тега"),
+    description: Optional[str] = Field(None, description="Описание тега")
 ) -> Dict[str, Any]:
     """Создает новый тег"""
     client = get_client()
     data = {"name": name}
-    if description:
-        data["description"] = description
     if slug:
         data["slug"] = slug
+    if description:
+        data["description"] = description
     
     result = client.post("tags", data=data)
     return {
@@ -1018,6 +944,47 @@ def wp_create_tag(
     }
 
 
+# ==================== ИНСТРУМЕНТЫ ДЛЯ ПОИСКА ====================
+
+@mcp.tool()
+def wp_search(
+    search: str = Field(..., description="Поисковый запрос"),
+    type: str = Field("post", description="Тип контента: post, page, attachment"),
+    per_page: int = Field(10, description="Количество результатов на странице"),
+    page: int = Field(1, description="Номер страницы")
+) -> Dict[str, Any]:
+    """Выполняет поиск по WordPress сайту"""
+    client = get_client()
+    params = {
+        "search": search,
+        "type": type,
+        "per_page": per_page,
+        "page": page
+    }
+    
+    # Используем соответствующий endpoint в зависимости от типа
+    endpoint = f"{type}s" if type != "attachment" else "media"
+    result = client.get(endpoint, params=params)
+    
+    items = []
+    for item in result:
+        items.append({
+            "id": item["id"],
+            "title": item["title"]["rendered"],
+            "type": type,
+            "link": item["link"],
+            "date": item.get("date", "")
+        })
+    
+    return {
+        "success": True,
+        "query": search,
+        "type": type,
+        "count": len(items),
+        "results": items
+    }
+
+
 # ==================== ИНСТРУМЕНТЫ ДЛЯ ИНФОРМАЦИИ О САЙТЕ ====================
 
 @mcp.tool()
@@ -1026,14 +993,8 @@ def wp_get_site_info() -> Dict[str, Any]:
     client = get_client()
     # Получаем информацию через различные endpoints
     try:
-        # Получаем информацию о сайте через корневой REST API endpoint
-        site_url = f"{WORDPRESS_URL}/wp-json"
-        try:
-            response = client.client.get(site_url, timeout=WORDPRESS_TIMEOUT)
-            response.raise_for_status()
-            site_info = response.json()
-        except:
-            site_info = {}
+        # Пробуем получить информацию о сайте через корневой endpoint
+        site_info = client.get("")
         
         # Получаем информацию о текущем пользователе
         try:
@@ -1047,6 +1008,7 @@ def wp_get_site_info() -> Dict[str, Any]:
                 "url": WORDPRESS_URL,
                 "name": site_info.get("name", ""),
                 "description": site_info.get("description", ""),
+                "url": site_info.get("url", WORDPRESS_URL),
                 "home": site_info.get("home", WORDPRESS_URL),
                 "namespaces": site_info.get("namespaces", []),
                 "authentication": {
@@ -1056,8 +1018,7 @@ def wp_get_site_info() -> Dict[str, Any]:
                 "current_user": {
                     "id": user_info["id"] if user_info else None,
                     "name": user_info["name"] if user_info else None,
-                    "username": user_info["username"] if user_info else None,
-                    "roles": user_info.get("roles", []) if user_info else []
+                    "username": user_info["username"] if user_info else None
                 } if user_info else None
             }
         }

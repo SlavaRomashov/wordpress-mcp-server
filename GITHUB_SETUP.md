@@ -17,7 +17,7 @@
 
 ```bash
 # Добавьте удаленный репозиторий (замените YOUR_USERNAME на ваш username)
-git remote add origin https://github.com/YOUR_USERNAME/wordpress-mcp-server.git
+git remgit remote add origin https://github.com/SlavaRomashov/wordpress-mcp-server.gitote add origin https://github.com/YOUR_USERNAME/wordpress-mcp-server.git
 
 # Переименуйте ветку в main (если нужно)
 git branch -M main
@@ -44,7 +44,7 @@ git push -u origin main
 - ✅ README.md
 - ✅ SETUP.md
 - ✅ QUICKSTART.md
-- ✅ .env.example
+- ✅ config.example.env
 - ✅ example_usage.py
 - ✅ .gitignore
 - ✅ PROJECT_STRUCTURE.md
@@ -100,7 +100,7 @@ git pull
 ## Безопасность
 
 - ✅ `.env` файл уже в `.gitignore` - не попадет в репозиторий
-- ✅ `.env.example` - безопасный пример конфигурации
+- ✅ `config.example.env` - безопасный пример конфигурации
 - ✅ Никаких паролей или секретов в коде
 
 ## Проблемы?

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "wordpress": {
+      "command": "python3",
+      "args": [
+        "/полный/путь/к/server.py"
+      ],
+      "env": {
+        "WORDPRESS_URL": "https://your-site.com",
+        "WORDPRESS_USERNAME": "your_username",
+        "WORDPRESS_APP_PASSWORD": "your_application_password",
+        "WORDPRESS_TIMEOUT": "30"
+      }
+    }
+  }
+}

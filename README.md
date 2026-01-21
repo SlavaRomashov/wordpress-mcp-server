@@ -9,8 +9,10 @@
 - ✅ Управление пользователями
 - ✅ Управление медиафайлами
 - ✅ Управление комментариями
-- ✅ Получение информации о сайте
+- ✅ Управление категориями и тегами
 - ✅ Поиск контента
+- ✅ Получение информации о сайте
+- ✅ Поддержка Cloudflare Tunnel для безопасного подключения
 
 ## Установка
 
@@ -27,9 +29,9 @@ cd wordpress-mcp-server
 pip install -r requirements.txt
 ```
 
-3. Скопируйте файл `.env.example` в `.env`:
+3. Скопируйте файл `config.example.env` в `.env`:
 ```bash
-cp .env.example .env
+cp config.example.env .env
 ```
 
 4. Настройте переменные окружения в файле `.env`:
@@ -60,13 +62,25 @@ mcp run server.py
 
 ## Настройка в ChatGPT
 
+### Стандартное подключение (локально)
+
 1. Откройте настройки ChatGPT
 2. Перейдите в **Settings** → **Build** → **MCP Servers**
 3. Добавьте новый сервер:
    - **Name**: WordPress MCP Server
-   - **Command**: `python`
-   - **Args**: `["/path/to/server.py"]`
+   - **Command**: `python` (или `python3`)
+   - **Args**: `["/полный/путь/к/server.py"]`
    - **Env**: Укажите переменные окружения или используйте `.env` файл
+
+### Подключение через Cloudflare Tunnel
+
+Если ChatGPT работает на удаленном сервере или вы хотите использовать Cloudflare Tunnel для дополнительной безопасности:
+
+1. Следуйте инструкциям в [CLOUDFLARE_TUNNEL_SETUP.md](CLOUDFLARE_TUNNEL_SETUP.md)
+2. Настройте Cloudflare Tunnel согласно документации
+3. Используйте стандартную конфигурацию MCP в ChatGPT (туннель работает прозрачно)
+
+**Примечание**: MCP серверы обычно работают через stdio (stdin/stdout), поэтому Cloudflare Tunnel настраивается отдельно для обеспечения безопасного соединения между ChatGPT и вашим сервером.
 
 ## Доступные инструменты
 
@@ -91,9 +105,16 @@ mcp run server.py
 - `wp_update_user` - Обновить пользователя
 
 ### Медиа
-- `wp_upload_media` - Загрузить медиафайл (из URL или локального файла)
+- `wp_upload_media` - Загрузить медиафайл
 - `wp_get_media` - Получить медиафайл по ID
 - `wp_list_media` - Получить список медиафайлов
+
+### Комментарии
+- `wp_get_comment` - Получить комментарий по ID
+- `wp_list_comments` - Получить список комментариев
+- `wp_create_comment` - Создать комментарий
+- `wp_update_comment` - Обновить комментарий
+- `wp_delete_comment` - Удалить комментарий
 
 ### Категории
 - `wp_list_categories` - Получить список категорий
@@ -105,12 +126,8 @@ mcp run server.py
 - `wp_get_tag` - Получить тег по ID
 - `wp_create_tag` - Создать новый тег
 
-### Комментарии
-- `wp_get_comment` - Получить комментарий по ID
-- `wp_list_comments` - Получить список комментариев
-- `wp_create_comment` - Создать комментарий
-- `wp_update_comment` - Обновить комментарий
-- `wp_delete_comment` - Удалить комментарий
+### Поиск
+- `wp_search` - Выполнить поиск по сайту
 
 ### Информация о сайте
 - `wp_get_site_info` - Получить информацию о сайте
@@ -132,29 +149,42 @@ mcp run server.py
 Загрузи изображение по URL https://example.com/image.jpg с заголовком "Мое изображение"
 ```
 
-Или из локального файла:
-```
-Загрузи файл /path/to/image.jpg с заголовком "Мое изображение"
-```
+## Cloudflare Tunnel
 
-### Работа с категориями
-```
-Покажи мне все категории
-Создай новую категорию "Технологии" с описанием "Статьи о технологиях"
-```
+Для безопасного подключения ChatGPT к локальному MCP серверу через Cloudflare Tunnel:
 
-### Работа с тегами
-```
-Покажи мне все теги
-Создай новый тег "Python" с описанием "Статьи о Python"
+1. См. подробные инструкции в [CLOUDFLARE_TUNNEL_SETUP.md](CLOUDFLARE_TUNNEL_SETUP.md)
+2. Используйте скрипт `start_with_tunnel.sh` для запуска с туннелем
+3. Настройте DNS запись в Cloudflare панели
+
+**Быстрый старт с Cloudflare Tunnel:**
+```bash
+# 1. Установите cloudflared
+brew install cloudflare/cloudflare/cloudflared  # macOS
+# или
+sudo snap install cloudflared  # Linux
+
+# 2. Авторизуйтесь
+cloudflared tunnel login
+
+# 3. Создайте туннель
+cloudflared tunnel create wordpress-mcp
+
+# 4. Настройте DNS
+cloudflared tunnel route dns wordpress-mcp your-mcp-server.yourdomain.com
+
+# 5. Запустите туннель
+cloudflared tunnel run wordpress-mcp
 ```
 
 ## Безопасность
 
 - Никогда не коммитьте файл `.env` в репозиторий
 - Используйте Application Passwords вместо обычных паролей
+- Используйте Cloudflare Tunnel для безопасного подключения извне
 - Ограничьте доступ к серверу только доверенным IP-адресам (если возможно)
 - Регулярно обновляйте зависимости
+- Храните credentials файлы Cloudflare Tunnel в безопасном месте
 
 ## Лицензия
 
